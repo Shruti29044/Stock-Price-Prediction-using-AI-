@@ -102,35 +102,65 @@ You'll see:
 * Add longer forecast windows (7-day, 14-day)
 
 
-## 🧩 Challenges Faced
+## 🧩Challenges Faced (In Detail)
+Building an AI-powered stock trend prediction system using technical indicators, machine learning, and data storage pipelines posed a variety of real-world engineering and machine learning challenges. Here's a breakdown of the major issues encountered during development:
 
-While building this AI-powered stock trend predictor, I encountered and overcame several real-world challenges:
+1. 🔍 Low Initial Model Accuracy
+Problem: When starting with basic machine learning models (e.g., Logistic Regression or Decision Trees) using limited features (Close, MA5, MA10), the model struggled to achieve meaningful accuracy.
+Solution: I upgraded to a Random Forest Classifier and later explored XGBoost, which is better at capturing nonlinear relationships and temporal patterns. I also experimented with time-based train-test splits instead of random shuffles to reflect real-world constraints.
 
-### 1. 🔎 Low Prediction Accuracy (Initially)
+2. 🧪 Label Engineering
+Problem: Defining the "target" for prediction was more nuanced than it seemed. Initially, I used a binary target: “Will the price be higher in 3 days?” However, that label often misclassified sideways movement or slight noise as trends.
+Solution: I refined the label logic using actual movement thresholds (like a minimum % change) to make the target more meaningful. I also left room for integrating volatility-based or RSI-based labels in the future.
 
-The stock market is inherently noisy. Simple features like `Close`, `MA5`, and `MA10` didn’t provide high predictive power at first. I had to experiment with better label definitions and stronger models (like Random Forest and XGBoost) to boost accuracy.
+3. 💾 Working with SQL in Colab
+Problem: Integrating SQLite in Colab was tricky. Issues included:
 
-### 2. 🧪 Label Engineering Complexity
+Table creation and overwriting errors
 
-Defining a meaningful target (label) for “uptrend” vs. “downtrend” wasn’t trivial. I used a simple rule — predicting if the price 3 days later is higher — but this ignored volatility and could misclassify flat or unstable trends.
+Pandas’ to_sql() and read_sql() occasionally failing due to mismatched columns
 
-### 3. 💾 Data Management with SQL
+Indexing problems with datetime columns
+Solution: I added safe wrappers to check table existence, used parse_dates=["Date"] when loading, and ensured the schema was consistent between fetch and save.
 
-Working with SQLite for storing and loading ticker data introduced bugs, especially when dealing with datetime indexing and schema mismatches. I had to handle cases where data wasn't found, or the database was missing.
+4. 📊 Visualizing with Plotly Candlestick
+Problem: Plotly’s candlestick chart requires clean and complete OHLC (Open, High, Low, Close) data for every row. Missing or malformed values caused the chart to silently fail.
+Solution: I cleaned the last 60 rows of the dataframe explicitly and added input checks. I also isolated the chart function so that issues in prediction wouldn’t break the visualization.
 
-### 4. 📈 Plotly Visualization
+5. 🧠 Overfitting on Limited Data
+Problem: With just 6 months of historical stock data, models could memorize the data patterns and not generalize well to future trends.
+Solution: I:
 
-Candlestick charts via Plotly require well-formatted columns: `Open`, `High`, `Low`, `Close`. I had to clean and format the last 60 rows carefully to prevent rendering failures or blank charts.
+Used time-aware train/test splits (no shuffling)
 
-### 5. 🤖 Small Data Overfitting
+Tuned hyperparameters conservatively
 
-With only a few months of data, even advanced models risked overfitting. I had to use time-aware train/test splits to avoid data leakage and ensure realistic evaluation.
+Added technical indicators to reduce reliance on raw prices
 
-### 6. 🌐 Gradio Crashes / UI Debugging
+6. ⚠️ Gradio Runtime Crashes
+Problem: Gradio failed silently when:
 
-Gradio sometimes crashed silently in Google Colab if prediction functions returned `None` or if exceptions occurred. Setting `debug=True` helped trace and fix those issues.
+A function returned None
 
-### 7. ⏳ Slow Data Refresh
+Data wasn’t fetched properly from yfinance
 
-Relying on `yfinance` to download historical data in real-time slowed things down during testing. To fix this, I implemented SQL caching so repeated ticker predictions would use the local DB instead of re-fetching.
+The wrong format was passed to a Plotly component
+Solution: I added debug print statements inside the prediction function, caught and displayed fallback messages, and used debug=True during testing to surface backend errors.
+
+7. 🌐 Repeated Data Downloads
+Problem: Fetching data via yfinance every time a ticker was queried slowed the UI and caused throttling from the API.
+Solution: I implemented SQLite caching. On first fetch, data is saved to stock_data.db. On subsequent predictions, it’s loaded locally unless missing or outdated.
+
+8. 🔢 Feature Scaling (Optional Challenge)
+Problem: Random Forest doesn’t require feature scaling, but adding other models (like SVM or LSTM) would. Managing this in a multi-model pipeline adds complexity.
+Solution: I kept scaling logic modular so it could be plugged in conditionally if switching to models sensitive to scale.
+
+9. 📈 Prediction Interpretability
+Problem: Users wanted to know why a trend was predicted. But tree-based models like Random Forest aren’t easily interpretable without extra tools.
+Solution: I added indicator values (MA5, MA10, Close) in the UI to help users reason about trends. SHAP or feature importance can be added in future iterations.
+
+10. 🧪 Testing Real-World Use Cases
+Problem: Testing the model on random tickers revealed many with missing data, splits, or low volume — which hurt predictions.
+Solution: I added pre-checks for data length, column availability, and added fallback messages like “Not enough data for prediction.”
+
 
