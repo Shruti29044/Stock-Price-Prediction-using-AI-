@@ -101,3 +101,36 @@ You'll see:
 * Use LSTM/GRU models
 * Add longer forecast windows (7-day, 14-day)
 
+
+## 🧩 Challenges Faced
+
+While building this AI-powered stock trend predictor, I encountered and overcame several real-world challenges:
+
+### 1. 🔎 Low Prediction Accuracy (Initially)
+
+The stock market is inherently noisy. Simple features like `Close`, `MA5`, and `MA10` didn’t provide high predictive power at first. I had to experiment with better label definitions and stronger models (like Random Forest and XGBoost) to boost accuracy.
+
+### 2. 🧪 Label Engineering Complexity
+
+Defining a meaningful target (label) for “uptrend” vs. “downtrend” wasn’t trivial. I used a simple rule — predicting if the price 3 days later is higher — but this ignored volatility and could misclassify flat or unstable trends.
+
+### 3. 💾 Data Management with SQL
+
+Working with SQLite for storing and loading ticker data introduced bugs, especially when dealing with datetime indexing and schema mismatches. I had to handle cases where data wasn't found, or the database was missing.
+
+### 4. 📈 Plotly Visualization
+
+Candlestick charts via Plotly require well-formatted columns: `Open`, `High`, `Low`, `Close`. I had to clean and format the last 60 rows carefully to prevent rendering failures or blank charts.
+
+### 5. 🤖 Small Data Overfitting
+
+With only a few months of data, even advanced models risked overfitting. I had to use time-aware train/test splits to avoid data leakage and ensure realistic evaluation.
+
+### 6. 🌐 Gradio Crashes / UI Debugging
+
+Gradio sometimes crashed silently in Google Colab if prediction functions returned `None` or if exceptions occurred. Setting `debug=True` helped trace and fix those issues.
+
+### 7. ⏳ Slow Data Refresh
+
+Relying on `yfinance` to download historical data in real-time slowed things down during testing. To fix this, I implemented SQL caching so repeated ticker predictions would use the local DB instead of re-fetching.
+
